@@ -1,5 +1,5 @@
 # Expo react native project
-This is a react native Split app project using **Expo**. I hope you like it.
+This is a react native Split app project using **Expo**. I hope you like it. i enjoy it 
 [Go to Expo website] (https://docs.expo.dev)
 ## How to install
 Clone the repository
