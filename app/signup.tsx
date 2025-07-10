@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { account } from "../lib/appwrite";
 import { useRouter } from "expo-router";
+
+const logo = require("../assets/images/Split-logo.png");
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState("");
@@ -31,6 +33,7 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
+      <Image source={logo} style={styles.logo} />
       <Text style={styles.title}>Sign Up</Text>
 
       <TextInput
@@ -56,7 +59,7 @@ export default function SignUpScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
-          underlineColorAndroid="transparent" // Remove Android underline
+          underlineColorAndroid="transparent"
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
           <Ionicons
@@ -85,6 +88,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
   },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    resizeMode: "cover",
+    marginBottom: 20,
+    alignSelf: "center",
+    overflow: "hidden",
+  },
   title: {
     fontSize: 24,
     marginBottom: 20,
@@ -111,7 +123,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 0,
-    borderWidth: 0,                   
+    borderWidth: 0,
   },
   error: {
     color: "red",
