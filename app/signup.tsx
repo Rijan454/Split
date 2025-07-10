@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Image } from "react-native";
 import { account } from "../lib/appwrite";
 import { useRouter } from "expo-router";
+
+const logo = require("../../assets/images/Split-logo.png");
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState("");
@@ -29,6 +31,8 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
+      <Image source={logo} style={styles.logo} />
+
       <Text style={styles.title}>Sign Up</Text>
 
       <TextInput
@@ -72,6 +76,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 20,
+  },
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+    alignSelf: "center",
+    resizeMode: "contain",
   },
   title: {
     fontSize: 24,
