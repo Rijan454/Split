@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Image } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import { account } from "../lib/appwrite";
 import { useRouter } from "expo-router";
-
-const logo = require("../../assets/images/Split-logo.png");
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
 
@@ -31,8 +31,6 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
-      <Image source={logo} style={styles.logo} />
-
       <Text style={styles.title}>Sign Up</Text>
 
       <TextInput
@@ -51,13 +49,23 @@ export default function SignUpScreen() {
         keyboardType="email-address"
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          underlineColorAndroid="transparent" // Remove Android underline
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={24}
+            color="#555"
+          />
+        </TouchableOpacity>
+      </View>
 
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -77,13 +85,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
   },
-  logo: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
-    alignSelf: "center",
-    resizeMode: "contain",
-  },
   title: {
     fontSize: 24,
     marginBottom: 20,
@@ -95,6 +96,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 10,
     borderRadius: 5,
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#aaa",
+    borderRadius: 5,
+    marginBottom: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 0,
+    borderWidth: 0,                   
   },
   error: {
     color: "red",
