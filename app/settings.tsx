@@ -23,39 +23,43 @@ export default function SettingsScreen() {
         <Ionicons name="chevron-back" size={28} color="black" />
       </TouchableOpacity>
 
-      {/* Split Items By */}
-      <View style={styles.row}>
+      {/* Settings Options */}
+      <View style={styles.content}>
+        {/* Split Items By */}
         <TouchableOpacity
-          style={styles.leftSection}
+          style={styles.row}
           onPress={() => router.push("/splitItemsBy")}
         >
           <Text style={styles.label}>Split Items By</Text>
+          <Ionicons name="chevron-forward" size={22} color="black" />
         </TouchableOpacity>
-        <Ionicons name="chevron-forward" size={22} color="black" />
-      </View>
 
-      {/* Switches */}
-      <View style={styles.switchRow}>
-        <Text style={styles.label}>Push Notification</Text>
-        <Switch
-          value={pushNotifications}
-          onValueChange={setPushNotifications}
-        />
-      </View>
+        {/* Push Notification Toggle */}
+        <View style={styles.switchRow}>
+          <Text style={styles.label}>Push Notification</Text>
+          <Switch
+            value={pushNotifications}
+            onValueChange={setPushNotifications}
+          />
+        </View>
 
-      <View style={styles.switchRow}>
-        <Text style={styles.label}>Wallpaper Motion</Text>
-        <Switch
-          value={wallpaperMotion}
-          onValueChange={setWallpaperMotion}
-        />
-      </View>
+        {/* Wallpaper Motion Toggle */}
+        <View style={styles.switchRow}>
+          <Text style={styles.label}>Wallpaper Motion</Text>
+          <Switch
+            value={wallpaperMotion}
+            onValueChange={setWallpaperMotion}
+          />
+        </View>
 
-      {/* Summaries */}
-      <TouchableOpacity style={styles.row} onPress={() => router.push("/summaries")}>
-        <Text style={styles.label}>Summaries</Text>
-        <Ionicons name="chevron-forward" size={22} color="black" />
-      </TouchableOpacity>
+        {/* Summaries */}
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push("/Summaries")}>
+          <Text style={styles.label}>Summaries</Text>
+          <Ionicons name="chevron-forward" size={22} color="black" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -73,6 +77,9 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 10,
   },
+  content: {
+    marginTop: 40, // pushes content lower for better visual spacing
+  },
   row: {
     backgroundColor: "#EFEAEA",
     paddingVertical: 18,
@@ -82,10 +89,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
-  },
-  leftSection: {
-    flexDirection: "row",
-    alignItems: "center",
   },
   switchRow: {
     backgroundColor: "#EFEAEA",

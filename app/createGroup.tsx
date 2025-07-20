@@ -1,13 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 
 export default function CreateGroup() {
   const router = useRouter();
@@ -19,6 +18,11 @@ export default function CreateGroup() {
   const handleAddGroupMember = () => {
     // Navigate to the Add Group Member screen (update path as needed)
     router.push("/addGroupMember");
+  };
+
+  const handleExpense = () => {
+    // Navigate to the Expense screen 
+    router.push("/expense");
   };
 
   const handleSettings = () => {
