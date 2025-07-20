@@ -1,32 +1,48 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Image } from "react-native";
-import { account } from "../lib/appwrite";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
+
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../lib/firebase";
 
 const logo = require("../assets/images/Split-logo.png");
 
-export default function SignInScreen() {
+export default function IndexScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
   const router = useRouter();
 
   const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Error", "Please enter email and password.");
+      return;
+    }
+
     try {
-      await account.createSession(email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password.trim());
       console.log("Logged in!");
-      router.navigate("/");
-    } catch (err: any) {
-      console.log(err);
-      setError(err.message || "Something went wrong.");
+      router.replace("/home");
+    } catch (error: any) {
+      console.log(error);
+      Alert.alert(
+        "Login Failed",
+        error?.message || "Invalid credentials. Please try again."
+      );
     }
   };
 
   return (
     <View style={styles.container}>
       <Image source={logo} style={styles.logo} />
-      <Text style={styles.title}>Sign In</Text>
+      <Text style={styles.title}>Welcome Back</Text>
 
       <TextInput
         style={styles.input}
@@ -45,14 +61,13 @@ export default function SignInScreen() {
         secureTextEntry
       />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Sign In</Text>
+      </TouchableOpacity>
 
-      <Button title="Sign In" onPress={handleLogin} />
-
-      <Button
-        title="Don't have an account? Sign Up"
-        onPress={() => router.navigate("/signup")}
-      />
+      <TouchableOpacity onPress={() => router.push("/signup")}>
+        <Text style={styles.linkText}>Don’t have an account? Sign up</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -60,33 +75,42 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#2DBCC0",
     justifyContent: "center",
     padding: 20,
   },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    resizeMode: "cover",
-    marginBottom: 20,
+    width: 100,
+    height: 100,
     alignSelf: "center",
-    overflow: "hidden",
+    marginBottom: 30,
   },
   title: {
     fontSize: 24,
-    marginBottom: 20,
+    color: "#fff",
     textAlign: "center",
+    marginBottom: 20,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#aaa",
-    marginBottom: 12,
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 15,
   },
-  error: {
-    color: "red",
+  button: {
+    backgroundColor: "#3BE7CD",
+    borderRadius: 10,
+    padding: 15,
+    alignItems: "center",
     marginBottom: 10,
+  },
+  buttonText: {
+    color: "#000",
+    fontWeight: "bold",
+  },
+  linkText: {
+    color: "#fff",
     textAlign: "center",
+    marginTop: 10,
   },
 });
