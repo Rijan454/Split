@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
   createUserWithEmailAndPassword,
@@ -22,6 +23,8 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
 
   const handleSignup = async () => {
@@ -51,13 +54,13 @@ export default function SignUpScreen() {
         displayName: name.trim(),
       });
 
-      console.log("✅ Account created successfully");
+      console.log("Account created successfully");
 
-      // ✅ Show success message
+      //Show success message
       Alert.alert("Success", "Account created successfully!");
 
-      // ✅ Navigate to Sign In screen (usually index.tsx)
-      router.replace("/"); // if your sign-in screen is index.tsx
+      // Navigate to Sign In screen
+      router.replace("/");
     } catch (error: any) {
       console.log("Signup Error:", error);
       Alert.alert("Sign Up Failed", error.message || "Something went wrong.");
@@ -90,25 +93,45 @@ export default function SignUpScreen() {
         autoComplete="email"
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        textContentType="newPassword"
-        autoComplete="password-new"
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          textContentType="newPassword"
+          autoComplete="password-new"
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={24}
+            color="#888"
+            style={styles.eyeIcon}
+          />
+        </TouchableOpacity>
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm Password"
-        value={confirm}
-        onChangeText={setConfirm}
-        secureTextEntry
-        textContentType="newPassword"
-        autoComplete="password-new"
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Confirm Password"
+          value={confirm}
+          onChangeText={setConfirm}
+          secureTextEntry={!showConfirm}
+          textContentType="newPassword"
+          autoComplete="password-new"
+        />
+        <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
+          <Ionicons
+            name={showConfirm ? "eye-off" : "eye"}
+            size={24}
+            color="#888"
+            style={styles.eyeIcon}
+          />
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity style={styles.button} onPress={handleSignup}>
         <Text style={styles.buttonText}>Create Account</Text>
@@ -145,6 +168,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginBottom: 15,
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    marginBottom: 15,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+  },
+  eyeIcon: {
+    paddingHorizontal: 6,
   },
   button: {
     backgroundColor: "#3BE7CD",
