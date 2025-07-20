@@ -8,21 +8,13 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-import { signOut } from "firebase/auth";
-import { auth } from "../lib/firebase";
-
 const logo = require("../assets/images/Split-logo.png");
 
 export default function HomeScreen() {
   const router = useRouter();
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.replace("/");
-    } catch (error) {
-      console.log("Logout error:", error);
-    }
+  const handleGetStarted = () => {
+    router.push("/createGroup");
   };
 
   return (
@@ -33,8 +25,8 @@ export default function HomeScreen() {
       <Text style={styles.description}>
         Easily manage shared expenses and keep your balances clear.
       </Text>
-      <TouchableOpacity style={styles.button} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Log Out</Text>
+      <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
+        <Text style={styles.buttonText}>Get Started</Text>
       </TouchableOpacity>
     </View>
   );

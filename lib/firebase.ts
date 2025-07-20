@@ -1,8 +1,8 @@
 // lib/firebase.ts
 import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth"; // Simpler import
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth"; // 👈 Simpler import
-import { getAnalytics, isSupported } from "firebase/analytics";
+
 
 // Your Firebase config
 const firebaseConfig = {
@@ -15,20 +15,15 @@ const firebaseConfig = {
   measurementId: "G-FBX7N4NR2K",
 };
 
-// ✅ Initialize Firebase
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// ✅ Get Auth (no persistence)
+// Get Auth (no persistence)
 const auth = getAuth(app);
 
-// ✅ Initialize Firestore
+// Initialize Firestore
 const db = getFirestore(app);
 
-// ✅ Optional: Analytics (Web only)
-isSupported().then((supported) => {
-  if (supported) {
-    getAnalytics(app);
-  }
-});
+
 
 export { auth, db };

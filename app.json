@@ -7,11 +7,17 @@
     "icon": "./assets/images/icon.png",
     "scheme": "split",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.Split"
-    },
+  "supportsTablet": true,
+  "bundleIdentifier": "com.anonymous.Split",
+  "infoPlist": {
+    "NSAppTransportSecurity": {
+      "NSAllowsArbitraryLoads": true
+    }
+  }
+}
+,
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
