@@ -1,167 +1,189 @@
-import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { useRouter } from "expo-router";
+// app/(tabs)/expense/newExpense.tsx
 import React, { useState } from "react";
 import {
-  Platform,
-  StyleSheet,
+  View,
   Text,
   TextInput,
+  StyleSheet,
   TouchableOpacity,
-  View,
+  Alert,
 } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { ExpenseRepository } from "../../Repositories/ExpenseRepository";
+
+import { auth } from "../../../lib/firebase";
 
 export default function NewExpense() {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("0.00");
-  const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [dateLabel, setDateLabel] = useState("Select date");
+  const params = useLocalSearchParams();
 
-  const onChangeDate = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      setDate(selectedDate);
-      setDateLabel(selectedDate.toLocaleDateString());
+  const [title, setTitle] = useState(
+    typeof params.title === "string" ? params.title : ""
+  );
+  const [amount, setAmount] = useState(
+    typeof params.amount === "string" ? params.amount : ""
+  );
+  const [by, setBy] = useState(
+    typeof params.by === "string" ? params.by : ""
+  );
+  const [forMembers, setForMembers] = useState(() => {
+    if (typeof params.forMembers === "string") {
+      try {
+        return JSON.parse(params.forMembers);
+      } catch {
+        return [];
+      }
     }
+    return [];
+  });
+  const [currency, setCurrency] = useState(
+    typeof params.currency === "string" ? params.currency : "AUD"
+  );
+  const [date, setDate] = useState(
+    typeof params.date === "string" ? params.date : ""
+  );
+
+  const validateAndSave = async () => {
+    if (!title || !amount || !by || forMembers.length === 0 || !currency) {
+      Alert.alert("Missing Information", "Please fill all fields.");
+      return;
+    }
+
+    try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) throw new Error("User not logged in");
+
+      await ExpenseRepository.saveExpense({
+        title,
+        amount: parseFloat(amount), // make sure it's a number
+        by,
+        for: forMembers,
+        currency,
+        date,
+      });
+
+      router.push("/Summaryforexpense");
+    } catch (error) {
+      console.error("Error saving expense:", error);
+      Alert.alert("Error", "Could not save expense.");
+    }
+  };
+
+  const handleCancel = () => {
+    router.push("/expense");
+  };
+
+  const toQuery = {
+    title,
+    amount,
+    currency,
+    date,
+    forMembers: JSON.stringify(forMembers),
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.cancelText}>Cancel</Text>
+        <TouchableOpacity onPress={handleCancel}>
+          <Text style={styles.cancel}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Expense</Text>
-        <TouchableOpacity>
-          <Text style={styles.saveText}>Save</Text>
+        <Text style={styles.title}>Add Expense</Text>
+        <TouchableOpacity onPress={validateAndSave}>
+          <Text style={styles.save}>Save</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Title */}
-      <View style={styles.row}>
-        <TextInput
-          placeholder="Title"
-          placeholderTextColor="#888"
-          value={title}
-          onChangeText={setTitle}
-          style={styles.titleInput}
-        />
-      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Title"
+        value={title}
+        onChangeText={setTitle}
+      />
 
-      {/* Amount */}
-      <View style={styles.row}>
-        <Text style={styles.label}>Amount</Text>
-        <Text style={styles.value}>${amount}</Text>
-      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Amount"
+        value={amount}
+        onChangeText={setAmount}
+        keyboardType="numeric"
+      />
 
-      {/* By */}
-      <View style={styles.row}>
+      <TouchableOpacity
+        style={styles.input}
+        onPress={() =>
+          router.push({ pathname: "/expense/selectBy", params: toQuery })
+        }
+      >
         <Text style={styles.label}>By</Text>
-        <Ionicons name="arrow-forward" size={24} color="black" />
-      </View>
+        <Text style={styles.value}>{by || "Select"}</Text>
+      </TouchableOpacity>
 
-      {/* For */}
-      <View style={styles.row}>
+      <TouchableOpacity
+        style={styles.input}
+        onPress={() =>
+          router.push({ pathname: "/expense/selectFor", params: toQuery })
+        }
+      >
         <Text style={styles.label}>For</Text>
-        <Ionicons name="arrow-forward" size={24} color="black" />
-      </View>
+        <Text style={styles.value}>
+          {forMembers.length > 0 ? forMembers.join(", ") : "Select"}
+        </Text>
+      </TouchableOpacity>
 
-      {/* Currency */}
-      <View style={styles.row}>
-        <Text style={styles.label}>Currency</Text>
-        <Text style={styles.value}>$(AUD)</Text>
-      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Currency (e.g. AUD, USD)"
+        value={currency}
+        onChangeText={setCurrency}
+      />
 
-      {/* Date Picker */}
-      <View style={styles.row}>
-        <Text style={styles.label}>Date</Text>
-        <TouchableOpacity
-          style={styles.datePickerButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Text style={styles.dateText}>{dateLabel}</Text>
-          <Ionicons name="calendar" size={24} color="black" />
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display={Platform.OS === "ios" ? "inline" : "default"}
-            onChange={onChangeDate}
-          />
-        )}
-      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Date (e.g. 2025-07-31)"
+        value={date}
+        onChangeText={setDate}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    backgroundColor: "#fff",
     flex: 1,
+    backgroundColor: "#fff",
+    padding: 16,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 25,
+    marginBottom: 12,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#888",
-  },
-  cancelText: {
+  cancel: {
     color: "red",
-    fontWeight: "600",
+    fontWeight: "bold",
+  },
+  title: {
+    fontWeight: "bold",
     fontSize: 16,
   },
-  saveText: {
+  save: {
     color: "red",
-    fontWeight: "600",
-    fontSize: 16,
+    fontWeight: "bold",
   },
-  row: {
-    backgroundColor: "#f1e7e8",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-    borderRadius: 4,
+  input: {
+    padding: 16,
+    backgroundColor: "#f3e8e9",
+    borderRadius: 8,
+    marginBottom: 12,
   },
   label: {
-    fontSize: 16,
     fontWeight: "bold",
+    color: "#333",
   },
   value: {
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  titleInput: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#888",
-  },
-  datePickerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#d3d3d3",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-  },
-  dateText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#888",
-    marginRight: 8,
+    marginTop: 4,
+    color: "#555",
   },
 });
