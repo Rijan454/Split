@@ -19,7 +19,7 @@ const logo = require("../assets/images/Split-logo.png");
 export default function IndexScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // 👁️ toggle
+  const [showPassword, setShowPassword] = useState(false); // toggle
   const router = useRouter();
 
   const handleLogin = async () => {
