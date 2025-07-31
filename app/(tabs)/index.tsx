@@ -14,7 +14,7 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const handleGetStarted = () => {
-    router.push("/(tabs)/expense/newExpense"); // Navigate to newExpense screen
+    router.push("/createGroup"); // Navigate to createGroup screen
   };
 
   return (
