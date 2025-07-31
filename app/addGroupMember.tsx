@@ -1,3 +1,5 @@
+
+
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
@@ -14,6 +16,7 @@ import {
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Keyboard,
   Modal,
   ScrollView,
   StyleSheet,
@@ -37,7 +40,6 @@ export default function AddGroupMember() {
   const router = useRouter();
   const uid = auth.currentUser?.uid;
 
-  // 🔄 Load group name & members on mount
   useEffect(() => {
     if (!uid) return;
 
@@ -60,7 +62,6 @@ export default function AddGroupMember() {
     loadData();
   }, [uid]);
 
-  // 🔄 Update member name
   const updateMemberName = async (id: string, newName: string) => {
     if (!uid) return;
     await updateDoc(doc(db, "users", uid, "groupMembers", id), { name: newName });
@@ -69,7 +70,6 @@ export default function AddGroupMember() {
     );
   };
 
-  // ➕ Add new member
   const handleAddMember = async () => {
     if (!uid) return;
 
@@ -84,34 +84,28 @@ export default function AddGroupMember() {
     ]);
   };
 
-  // 🗑️ Delete member
   const handleDelete = async (id: string) => {
     if (!uid) return;
     await deleteDoc(doc(db, "users", uid, "groupMembers", id));
     setMembers((prev) => prev.filter((m) => m.id !== id));
   };
 
-  // ✅ Save group name to Firestore
   const handleSaveGroupName = async () => {
     if (!uid || groupName.trim() === "") return;
-
     const groupRef = doc(db, "users", uid, "group", "groupInfo");
     await setDoc(groupRef, { name: groupName });
-
     setIsModalVisible(false);
     Alert.alert("Success", "Group name saved!");
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* ✅ Back Button to CreateGroup screen */}
-      <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/createGroup")}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/home")}> 
         <Ionicons name="chevron-back" size={32} color="#000" />
       </TouchableOpacity>
 
       <Text style={styles.heading}>Add Group Members</Text>
 
-      {/* ✅ Group name display */}
       {groupName ? (
         <View style={styles.groupNameRow}>
           <Text style={styles.groupNameText}>Group: {groupName}</Text>
@@ -128,7 +122,6 @@ export default function AddGroupMember() {
         </TouchableOpacity>
       )}
 
-      {/* 👥 Member List */}
       {members.map((member) => (
         <View key={member.id} style={styles.memberRow}>
           <View style={styles.avatar}>
@@ -172,12 +165,10 @@ export default function AddGroupMember() {
         </View>
       ))}
 
-      {/* ➕ Add Member Button */}
       <TouchableOpacity style={styles.button} onPress={handleAddMember}>
         <Text style={styles.buttonText}>Add More Member</Text>
       </TouchableOpacity>
 
-      {/* ▶️ Continue to Expense */}
       <TouchableOpacity
         style={[styles.button, { backgroundColor: "#1abc9c" }]}
         onPress={() => router.push("/expense")}
@@ -185,7 +176,6 @@ export default function AddGroupMember() {
         <Text style={styles.buttonText}>Continue</Text>
       </TouchableOpacity>
 
-      {/* 📝 Group Name Modal */}
       <Modal transparent={true} visible={isModalVisible} animationType="fade">
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
