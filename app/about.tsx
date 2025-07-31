@@ -11,7 +11,7 @@ import {
     TouchableOpacity
 } from "react-native";
 
-const logo = require("../assets/images/Split-logo.png"); 
+const logo = require("../assets/images/Split-logo.png");
 
 export default function AboutScreen() {
   const router = useRouter();

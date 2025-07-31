@@ -1,4 +1,3 @@
-// app/_layout.tsx
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -19,8 +18,17 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="signup" options={{ headerShown: false }} />
-        {/* this will load the tab layout */}
+        {/* Main Tab Navigation */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* Suggest Payments as Modal - not part of tab bar */}
+        <Stack.Screen
+          name="suggestPayments"
+          options={{
+            presentation: "modal", // or 'card' if you don't want popup style
+            headerShown: true,
+            title: "Suggested Payments",
+          }}
+        />
         <Stack.Screen name="+not-found" options={{ title: "Oops!" }} />
       </Stack>
       <StatusBar style="auto" />

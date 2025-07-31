@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import SettingsRepository from "../app/Repositories/SettingsRepository"; // default import
+import SettingsRepository from "./Repositories/SettingsRepository"; // default import
 
 export default function SettingsScreen() {
   const router = useRouter();

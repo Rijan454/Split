@@ -16,7 +16,7 @@ export default function HomeScreen() {
 
   // Navigate to the createGroup screen when "Get Started" is pressed
   const handleGetStarted = () => {
-    router.push("/createGroup");
+    router.push("../createGroup"); // Navigate to newExpense screen
   };
 
   return (
