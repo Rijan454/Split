@@ -21,7 +21,8 @@ export default function Expenses() {
       {/* New Expenses */}
       <TouchableOpacity
         style={styles.box}
-        onPress={() => router.push("/(tabs)/expense/newExpense")}
+        onPress={() => router.push("/expense/newExpense")}
+
       >
         <Text style={styles.boxText}>
           💵 New Expenses

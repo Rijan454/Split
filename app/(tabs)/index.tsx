@@ -8,13 +8,15 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
+// Import your logo image from assets
 const logo = require("../../assets/images/Split-logo.png");
 
 export default function HomeScreen() {
   const router = useRouter();
 
+  // Navigate to the createGroup screen when "Get Started" is pressed
   const handleGetStarted = () => {
-    router.push("/(tabs)/expense/newExpense"); // Navigate to newExpense screen
+    router.push("/createGroup");
   };
 
   return (
@@ -24,6 +26,7 @@ export default function HomeScreen() {
       <Text style={styles.description}>
         Easily manage shared expenses and keep your balances clear.
       </Text>
+
       <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
         <Text style={styles.buttonText}>Get Started</Text>
       </TouchableOpacity>

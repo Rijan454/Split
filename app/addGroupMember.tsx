@@ -16,14 +16,13 @@ import {
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Keyboard,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { auth, db } from "../lib/firebase";
 
@@ -100,7 +99,7 @@ export default function AddGroupMember() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/home")}> 
+      <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/createGroup")}> 
         <Ionicons name="chevron-back" size={32} color="#000" />
       </TouchableOpacity>
 
@@ -171,7 +170,7 @@ export default function AddGroupMember() {
 
       <TouchableOpacity
         style={[styles.button, { backgroundColor: "#1abc9c" }]}
-        onPress={() => router.push("/expense")}
+        onPress={() => router.push("/(tabs)/Profile")}
       >
         <Text style={styles.buttonText}>Continue</Text>
       </TouchableOpacity>
