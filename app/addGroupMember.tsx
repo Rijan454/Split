@@ -1,6 +1,15 @@
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
-import { auth, db } from "../lib/firebase"; // Adjust path if needed
+import {
+  Keyboard,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { auth, db } from "../lib/firebase";
 
 interface Member {
   id: number;
@@ -57,7 +66,7 @@ export default function AddGroupMember() {
       m.id === id ? { ...m, name: newName } : m
     );
     setMembers(updated);
-    updateMembersInFirestore(updated); // Save to Firestore
+    updateMembersInFirestore(updated);
   };
 
   const handleBlur = (id: number) => {
@@ -65,7 +74,7 @@ export default function AddGroupMember() {
       m.id === id ? { ...m, isEditing: false } : m
     );
     setMembers(updated);
-    updateMembersInFirestore(updated); // Save on blur
+    updateMembersInFirestore(updated);
   };
 
   const handleAddMember = () => {
@@ -80,63 +89,89 @@ export default function AddGroupMember() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>addGroupMember</h2>
+    <View style={styles.container}>
+      <Text style={styles.heading}>Add Group Member</Text>
 
-      <div style={{ marginTop: 20 }}>
+      <ScrollView style={styles.listContainer}>
         {members.map((member) => (
-          <div
+          <TouchableOpacity
             key={member.id}
-            style={{
-              backgroundColor: "#f2eaea",
-              padding: 15,
-              margin: "10px 0",
-              textAlign: "center",
-              borderRadius: 10,
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-            onClick={() => handleEdit(member.id)}
+            style={styles.memberItem}
+            onPress={() => handleEdit(member.id)}
+            activeOpacity={0.7}
           >
             {member.isEditing ? (
-              <input
-                type="text"
-                autoFocus
+              <TextInput
                 value={member.name}
-                onChange={(e) => handleChange(member.id, e.target.value)}
+                autoFocus
+                style={styles.input}
+                onChangeText={(text) => handleChange(member.id, text)}
                 onBlur={() => handleBlur(member.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleBlur(member.id);
-                }}
-                style={{
-                  fontSize: 18,
-                  textAlign: "center",
-                  borderRadius: 5,
-                  padding: 5,
+                onSubmitEditing={() => {
+                  handleBlur(member.id);
+                  Keyboard.dismiss();
                 }}
               />
             ) : (
-              member.name
+              <Text style={styles.memberText}>{member.name}</Text>
             )}
-          </div>
+          </TouchableOpacity>
         ))}
-      </div>
+      </ScrollView>
 
-      <button
-        style={{
-          marginTop: 40,
-          backgroundColor: "turquoise",
-          color: "black",
-          padding: "10px 20px",
-          borderRadius: 20,
-          fontWeight: "bold",
-          border: "none",
-          cursor: "pointer",
-        }}
-        onClick={handleAddMember}
-      >
-        Add More member
-      </button>
-    </div>
+      <TouchableOpacity style={styles.addButton} onPress={handleAddMember}>
+        <Text style={styles.addButtonText}>Add More Member</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  heading: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  listContainer: {
+    flex: 1,
+  },
+  memberItem: {
+    backgroundColor: "#f2eaea",
+    padding: 15,
+    marginVertical: 8,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  memberText: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  input: {
+    fontSize: 18,
+    padding: 8,
+    backgroundColor: "#fff",
+    borderRadius: 5,
+    width: "100%",
+    textAlign: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+  },
+  addButton: {
+    marginTop: 30,
+    backgroundColor: "turquoise",
+    padding: 12,
+    borderRadius: 25,
+    alignItems: "center",
+  },
+  addButtonText: {
+    color: "black",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+});
