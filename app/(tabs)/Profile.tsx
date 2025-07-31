@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
   Alert,
   Modal,
   StyleSheet,
@@ -21,12 +20,14 @@ interface Member {
 
 export default function ProfileScreen() {
   const router = useRouter();
+
   const [members, setMembers] = useState<Member[]>([
     { id: '1', name: 'Member 1', balance: 0, isEditing: false },
     { id: '2', name: 'Member 2', balance: 0, isEditing: false },
     { id: '3', name: 'Member 3', balance: 0, isEditing: false },
     { id: '4', name: 'Member 4', balance: 0, isEditing: false },
   ]);
+
   const [settleModalVisible, setSettleModalVisible] = useState(false);
 
   const addMember = () => {
@@ -94,7 +95,7 @@ export default function ProfileScreen() {
         <Text style={styles.buttonText}>Settle Up</Text>
       </TouchableOpacity>
 
-      {/* Modal for Settle Up */}
+      {/* Settle Up Modal */}
       <Modal visible={settleModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.settleContainer}>
@@ -106,7 +107,7 @@ export default function ProfileScreen() {
               style={styles.modalButton}
               onPress={() => {
                 setSettleModalVisible(false);
-                Alert.alert('Suggesting payments...');
+                router.push('/suggestPayments'); // Navigate to suggestPayments
               }}
             >
               <Text style={styles.buttonText}>Suggest Payments</Text>
