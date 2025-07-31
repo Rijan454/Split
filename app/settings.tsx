@@ -1,20 +1,47 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Switch,
-  SafeAreaView,
-} from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  SafeAreaView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import SettingsRepository from "../app/Repositories/SettingsRepository"; // default import
 
 export default function SettingsScreen() {
   const router = useRouter();
 
   const [pushNotifications, setPushNotifications] = useState(false);
   const [wallpaperMotion, setWallpaperMotion] = useState(false);
+
+  // Load preferences from Firestore
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      const prefs = await SettingsRepository.getSettings(); // correct method
+      if (prefs) {
+        setPushNotifications(prefs.pushNotification ?? false);
+        setWallpaperMotion(prefs.wallpaperMotion ?? false);
+      }
+    };
+    fetchPreferences();
+  }, []);
+
+  // Update preferences handler
+  const updatePreference = (
+    key: "pushNotification" | "wallpaperMotion",
+    value: boolean
+  ) => {
+    if (key === "pushNotification") {
+      setPushNotifications(value);
+      SettingsRepository.updateSettings({ pushNotification: value });
+    } else if (key === "wallpaperMotion") {
+      setWallpaperMotion(value);
+      SettingsRepository.updateSettings({ wallpaperMotion: value });
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -23,7 +50,6 @@ export default function SettingsScreen() {
         <Ionicons name="chevron-back" size={28} color="black" />
       </TouchableOpacity>
 
-      {/* Settings Options */}
       <View style={styles.content}>
         {/* Split Items By */}
         <TouchableOpacity
@@ -39,7 +65,9 @@ export default function SettingsScreen() {
           <Text style={styles.label}>Push Notification</Text>
           <Switch
             value={pushNotifications}
-            onValueChange={setPushNotifications}
+            onValueChange={(value) =>
+              updatePreference("pushNotification", value)
+            }
           />
         </View>
 
@@ -48,14 +76,17 @@ export default function SettingsScreen() {
           <Text style={styles.label}>Wallpaper Motion</Text>
           <Switch
             value={wallpaperMotion}
-            onValueChange={setWallpaperMotion}
+            onValueChange={(value) =>
+              updatePreference("wallpaperMotion", value)
+            }
           />
         </View>
 
         {/* Summaries */}
         <TouchableOpacity
           style={styles.row}
-          onPress={() => router.push("/Summaries")}>
+          onPress={() => router.push("/Summaries")}
+        >
           <Text style={styles.label}>Summaries</Text>
           <Ionicons name="chevron-forward" size={22} color="black" />
         </TouchableOpacity>
@@ -78,7 +109,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   content: {
-    marginTop: 40, // pushes content lower for better visual spacing
+    marginTop: 40,
   },
   row: {
     backgroundColor: "#EFEAEA",
