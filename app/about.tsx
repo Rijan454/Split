@@ -11,7 +11,7 @@ import {
     TouchableOpacity
 } from "react-native";
 
-const logo = require("../assets/images/Split-logo.png"); // Make sure this is your latest logo
+const logo = require("../assets/images/Split-logo.png"); 
 
 export default function AboutScreen() {
   const router = useRouter();
@@ -21,7 +21,7 @@ export default function AboutScreen() {
   };
 
   const handleFacebookSupport = () => {
-    Linking.openURL("https://www.facebook.com"); // Replace with actual Split Facebook page if available
+    Linking.openURL("https://www.facebook.com"); 
   };
 
   return (

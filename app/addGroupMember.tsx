@@ -1,7 +1,23 @@
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+
+
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Keyboard,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,166 +28,273 @@ import {
 import { auth, db } from "../lib/firebase";
 
 interface Member {
-  id: number;
+  id: string;
   name: string;
   isEditing: boolean;
 }
 
 export default function AddGroupMember() {
   const [members, setMembers] = useState<Member[]>([]);
+  const [groupName, setGroupName] = useState("");
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const router = useRouter();
+  const uid = auth.currentUser?.uid;
 
   useEffect(() => {
-    const loadMembers = async () => {
-      const uid = auth.currentUser?.uid;
-      if (!uid) return;
+    if (!uid) return;
 
-      const groupDoc = doc(db, "users", uid, "groups", "default");
-      const groupSnap = await getDoc(groupDoc);
+    const loadData = async () => {
+      const memberSnap = await getDocs(collection(db, "users", uid, "groupMembers"));
+      const groupDoc = await getDoc(doc(db, "users", uid, "group", "groupInfo"));
 
-      if (groupSnap.exists()) {
-        const savedMembers = groupSnap.data().members;
-        setMembers(savedMembers);
-      } else {
-        const defaultMembers = [
-          { id: 1, name: "Member 1", isEditing: false },
-          { id: 2, name: "Member 2", isEditing: false },
-          { id: 3, name: "Member 3", isEditing: false },
-          { id: 4, name: "Member 4", isEditing: false },
-        ];
-        setMembers(defaultMembers);
-        await setDoc(groupDoc, { members: defaultMembers });
+      const loaded: Member[] = memberSnap.docs.map((docSnap) => ({
+        id: docSnap.id,
+        name: docSnap.data().name,
+        isEditing: false,
+      }));
+      setMembers(loaded);
+
+      if (groupDoc.exists()) {
+        setGroupName(groupDoc.data().name || "");
       }
     };
 
-    loadMembers();
-  }, []);
+    loadData();
+  }, [uid]);
 
-  const updateMembersInFirestore = async (updatedMembers: Member[]) => {
-    const uid = auth.currentUser?.uid;
+  const updateMemberName = async (id: string, newName: string) => {
+    if (!uid) return;
+    await updateDoc(doc(db, "users", uid, "groupMembers", id), { name: newName });
+    setMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, name: newName } : m))
+    );
+  };
+
+  const handleAddMember = async () => {
     if (!uid) return;
 
-    const groupDoc = doc(db, "users", uid, "groups", "default");
-    await updateDoc(groupDoc, { members: updatedMembers });
-  };
-
-  const handleEdit = (id: number) => {
-    const updated = members.map((m) =>
-      m.id === id ? { ...m, isEditing: true } : m
-    );
-    setMembers(updated);
-  };
-
-  const handleChange = (id: number, newName: string) => {
-    const updated = members.map((m) =>
-      m.id === id ? { ...m, name: newName } : m
-    );
-    setMembers(updated);
-    updateMembersInFirestore(updated);
-  };
-
-  const handleBlur = (id: number) => {
-    const updated = members.map((m) =>
-      m.id === id ? { ...m, isEditing: false } : m
-    );
-    setMembers(updated);
-    updateMembersInFirestore(updated);
-  };
-
-  const handleAddMember = () => {
-    const newMember: Member = {
-      id: members.length + 1,
+    const newDoc = await addDoc(collection(db, "users", uid, "groupMembers"), {
       name: `Member ${members.length + 1}`,
-      isEditing: false,
-    };
-    const updated = [...members, newMember];
-    setMembers(updated);
-    updateMembersInFirestore(updated);
+      createdAt: Timestamp.now(),
+    });
+
+    setMembers((prev) => [
+      ...prev,
+      { id: newDoc.id, name: `Member ${members.length + 1}`, isEditing: false },
+    ]);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!uid) return;
+    await deleteDoc(doc(db, "users", uid, "groupMembers", id));
+    setMembers((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const handleSaveGroupName = async () => {
+    if (!uid || groupName.trim() === "") return;
+    const groupRef = doc(db, "users", uid, "group", "groupInfo");
+    await setDoc(groupRef, { name: groupName });
+    setIsModalVisible(false);
+    Alert.alert("Success", "Group name saved!");
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Add Group Member</Text>
-
-      <ScrollView style={styles.listContainer}>
-        {members.map((member) => (
-          <TouchableOpacity
-            key={member.id}
-            style={styles.memberItem}
-            onPress={() => handleEdit(member.id)}
-            activeOpacity={0.7}
-          >
-            {member.isEditing ? (
-              <TextInput
-                value={member.name}
-                autoFocus
-                style={styles.input}
-                onChangeText={(text) => handleChange(member.id, text)}
-                onBlur={() => handleBlur(member.id)}
-                onSubmitEditing={() => {
-                  handleBlur(member.id);
-                  Keyboard.dismiss();
-                }}
-              />
-            ) : (
-              <Text style={styles.memberText}>{member.name}</Text>
-            )}
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <TouchableOpacity style={styles.addButton} onPress={handleAddMember}>
-        <Text style={styles.addButtonText}>Add More Member</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/home")}> 
+        <Ionicons name="chevron-back" size={32} color="#000" />
       </TouchableOpacity>
-    </View>
+
+      <Text style={styles.heading}>Add Group Members</Text>
+
+      {groupName ? (
+        <View style={styles.groupNameRow}>
+          <Text style={styles.groupNameText}>Group: {groupName}</Text>
+          <TouchableOpacity onPress={() => setIsModalVisible(true)}>
+            <Ionicons name="create-outline" size={20} color="#1abc9c" style={{ marginLeft: 10 }} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: "#1abc9c" }]}
+          onPress={() => setIsModalVisible(true)}
+        >
+          <Text style={styles.buttonText}>Name Your Group</Text>
+        </TouchableOpacity>
+      )}
+
+      {members.map((member) => (
+        <View key={member.id} style={styles.memberRow}>
+          <View style={styles.avatar}>
+            <Text style={{ fontWeight: "bold", color: "#000" }}>
+              {member.name.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+
+          {member.isEditing ? (
+            <TextInput
+              style={styles.input}
+              value={member.name}
+              autoFocus
+              onChangeText={(text) => updateMemberName(member.id, text)}
+              onBlur={() =>
+                setMembers((prev) =>
+                  prev.map((m) =>
+                    m.id === member.id ? { ...m, isEditing: false } : m
+                  )
+                )
+              }
+            />
+          ) : (
+            <TouchableOpacity
+              style={styles.nameBox}
+              onPress={() =>
+                setMembers((prev) =>
+                  prev.map((m) =>
+                    m.id === member.id ? { ...m, isEditing: true } : m
+                  )
+                )
+              }
+            >
+              <Text style={styles.nameText}>{member.name}</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity onPress={() => handleDelete(member.id)}>
+            <Ionicons name="trash" size={24} color="red" />
+          </TouchableOpacity>
+        </View>
+      ))}
+
+      <TouchableOpacity style={styles.button} onPress={handleAddMember}>
+        <Text style={styles.buttonText}>Add More Member</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: "#1abc9c" }]}
+        onPress={() => router.push("/expense")}
+      >
+        <Text style={styles.buttonText}>Continue</Text>
+      </TouchableOpacity>
+
+      <Modal transparent={true} visible={isModalVisible} animationType="fade">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Enter Group Name</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={groupName}
+              onChangeText={setGroupName}
+              placeholder="e.g. Trip, Flatmates, Event"
+            />
+            <TouchableOpacity style={styles.modalButton} onPress={handleSaveGroupName}>
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>Save Group Name</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    flex: 1,
     backgroundColor: "#fff",
+    flexGrow: 1,
+  },
+  backButton: {
+    marginBottom: 10,
   },
   heading: {
-    fontSize: 24,
     fontWeight: "bold",
+    fontSize: 20,
     textAlign: "center",
     marginBottom: 20,
   },
-  listContainer: {
-    flex: 1,
-  },
-  memberItem: {
-    backgroundColor: "#f2eaea",
-    padding: 15,
-    marginVertical: 8,
-    borderRadius: 10,
+  groupNameRow: {
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
+    marginBottom: 20,
   },
-  memberText: {
+  groupNameText: {
     fontSize: 18,
     fontWeight: "bold",
+    color: "#2c3e50",
+  },
+  memberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f2eaea",
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 10,
+  },
+  avatar: {
+    backgroundColor: "#1de9b6",
+    height: 35,
+    width: 35,
+    borderRadius: 17.5,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
   },
   input: {
-    fontSize: 18,
-    padding: 8,
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    fontSize: 16,
     backgroundColor: "#fff",
-    borderRadius: 5,
-    width: "100%",
-    textAlign: "center",
-    borderWidth: 1,
-    borderColor: "#ccc",
   },
-  addButton: {
-    marginTop: 30,
-    backgroundColor: "turquoise",
-    padding: 12,
-    borderRadius: 25,
+  nameBox: {
+    flex: 1,
+  },
+  nameText: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: "#33e3d3",
+    padding: 15,
+    borderRadius: 20,
+    marginTop: 20,
     alignItems: "center",
   },
-  addButtonText: {
-    color: "black",
-    fontSize: 16,
+  buttonText: {
     fontWeight: "bold",
+    color: "#000",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalBox: {
+    margin: 30,
+    backgroundColor: "#fff",
+    padding: 25,
+    borderRadius: 10,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  modalButton: {
+    backgroundColor: "#1abc9c",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
   },
 });

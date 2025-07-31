@@ -1,45 +1,30 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TouchableOpacity
+  TouchableOpacity,
 } from "react-native";
 
 export default function CreateGroup() {
   const router = useRouter();
 
-  const goBack = () => {
-    router.back();
-  };
-
   const handleAddGroupMember = () => {
-    // Navigate to the Add Group Member screen (update path as needed)
     router.push("/addGroupMember");
   };
 
-  const handleExpense = () => {
-    // Navigate to the Expense screen 
-    router.push("/expense");
-  };
-
   const handleSettings = () => {
-    // Navigate to Settings screen (update path as needed)
     router.push("/settings");
   };
 
   const handleAboutSplit = () => {
-    // Navigate to About Split screen (update path as needed)
     router.push("/about");
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={goBack}>
-        <Ionicons name="chevron-back" size={32} color="#000" />
-      </TouchableOpacity>
+      <Text style={styles.header}>Home</Text>
 
       <TouchableOpacity style={styles.box} onPress={handleAddGroupMember}>
         <Text style={styles.boxText}>Add Group Member</Text>
@@ -50,7 +35,7 @@ export default function CreateGroup() {
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.box} onPress={handleAboutSplit}>
-        <Text style={styles.boxText}>About split</Text>
+        <Text style={styles.boxText}>About Split</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -60,10 +45,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop: 40,
+    paddingTop: 60,
   },
-  backButton: {
-    marginLeft: 16,
+  header: {
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
     marginBottom: 40,
   },
   box: {
