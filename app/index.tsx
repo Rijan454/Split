@@ -31,7 +31,7 @@ export default function IndexScreen() {
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password.trim());
       console.log("Logged in!");
-      router.replace("/home");
+      router.replace("/(tabs)");
     } catch (error: any) {
       console.log(error);
       Alert.alert(

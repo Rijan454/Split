@@ -1,13 +1,12 @@
-import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React from "react";
+import {
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity
+} from "react-native";
 
 export default function Expenses() {
   const router = useRouter();
@@ -20,16 +19,19 @@ export default function Expenses() {
       </TouchableOpacity>
 
       {/* New Expenses */}
-      <TouchableOpacity style={styles.box}>
+      <TouchableOpacity
+        style={styles.box}
+        onPress={() => router.push("/(tabs)/expense/newExpense")}
+      >
         <Text style={styles.boxText}>
-          <Text role="img" aria-label="money">💵</Text>  New Expenses
+          💵 New Expenses
         </Text>
       </TouchableOpacity>
 
       {/* Payment */}
-      <TouchableOpacity style={styles.box}>
+      <TouchableOpacity style={styles.box} onPress={() => alert("Coming soon!")}>
         <Text style={styles.boxText}>
-          <Text role="img" aria-label="payment">💬</Text>  Payment
+          💬 Payment
         </Text>
       </TouchableOpacity>
     </SafeAreaView>
