@@ -7,7 +7,7 @@ export const ExpenseRepository = {
     title: string;
     amount: number;
     by: string;
-    byName?: string;      // ✅ added for display
+    byName?: string;      // added for display
     for: string[];
     currency: string;
     date?: string;

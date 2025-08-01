@@ -1,34 +1,36 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
-import { useRouter } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
   collection,
   deleteDoc,
   doc,
   getDocs,
+  orderBy,
+  query,
   Timestamp,
 } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
 import {
-  Swipeable,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
   GestureHandlerRootView,
+  Swipeable,
 } from "react-native-gesture-handler";
 import {
   Menu,
-  MenuOptions,
   MenuOption,
-  MenuTrigger,
+  MenuOptions,
   MenuProvider,
+  MenuTrigger,
 } from "react-native-popup-menu";
-import { Ionicons } from "@expo/vector-icons";
 
 const formatDate = (date: any): string => {
   if (!date) return new Date().toISOString().split("T")[0];
@@ -44,12 +46,16 @@ export default function SummaryforExpense() {
   const fetchExpenses = async () => {
     try {
       if (!user) return;
-      const ref = collection(db, "users", user.uid, "expenses");
-      const snap = await getDocs(ref);
+
+      const expensesRef = collection(db, "users", user.uid, "expenses");
+      const q = query(expensesRef, orderBy("date", "desc"));
+      const snap = await getDocs(q);
+
       const items = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
       setExpenses(items);
     } catch (err) {
       console.error("Error fetching expenses", err);
@@ -57,16 +63,17 @@ export default function SummaryforExpense() {
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      if (!user) return;
-      await deleteDoc(doc(db, "users", user.uid, "expenses", id));
-      console.log("Deleted:", id);
-      fetchExpenses(); // Refresh after delete
-    } catch (err) {
-      console.error("Error deleting expense", err);
-      Alert.alert("Delete failed", "Could not delete expense.");
-    }
-  };
+  console.log("handleDelete called for ID:", id); // Confirm this logs
+  try {
+    if (!user) return;
+    await deleteDoc(doc(db, "users", user.uid, "expenses", id));
+    console.log("Deleted:", id); // Confirm deletion logs
+    fetchExpenses(); // Refresh list
+  } catch (err) {
+    console.error("Error deleting expense", err);
+    Alert.alert("Delete failed", "Could not delete expense.");
+  }
+};
 
   const renderRightActions = (id: string) => (
     <TouchableOpacity
@@ -74,7 +81,11 @@ export default function SummaryforExpense() {
       onPress={() =>
         Alert.alert("Delete", "Are you sure you want to delete this item?", [
           { text: "Cancel", style: "cancel" },
-          { text: "Delete", style: "destructive", onPress: () => handleDelete(id) },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => handleDelete(id),
+          },
         ])
       }
     >
@@ -88,19 +99,36 @@ export default function SummaryforExpense() {
 
   const renderItem = ({ item }: { item: any }) => (
     <Swipeable renderRightActions={() => renderRightActions(item.id)}>
-      <View style={styles.card}>
-        <View style={styles.left}>
-          <Ionicons name="receipt-outline" size={30} color="black" />
+      <TouchableOpacity
+        onPress={() =>
+  router.push({
+    pathname: "/expense/expenseDetail",
+    params: {
+      title: item.title,
+      amount: item.amount,
+      date: formatDate(item.date),
+      byMember: item.byName ?? "Unknown",
+      forMembers: item.forMembers?.length
+        ? item.forMembers.join(", ")
+        : "Not shared",
+    },
+  })
+}
+      >
+        <View style={styles.card}>
+          <View style={styles.left}>
+            <Ionicons name="receipt-outline" size={30} color="black" />
+          </View>
+          <View style={styles.middle}>
+            <Text style={styles.bold}>{item.title || "Untitled"}</Text>
+            <Text>Member: {item.byName || "Unknown"}</Text>
+          </View>
+          <View style={styles.right}>
+            <Text style={styles.bold}>${item.amount}</Text>
+            <Text style={styles.date}>{formatDate(item.date)}</Text>
+          </View>
         </View>
-        <View style={styles.middle}>
-          <Text style={styles.bold}>{item.title || "Category"}</Text>
-          <Text>Member: {item.byName|| "Anonymous"}</Text>
-        </View>
-        <View style={styles.right}>
-          <Text style={styles.bold}>${item.amount}</Text>
-          <Text style={styles.date}>{formatDate(item.date)}</Text>
-        </View>
-      </View>
+      </TouchableOpacity>
     </Swipeable>
   );
 

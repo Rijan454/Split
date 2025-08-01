@@ -19,7 +19,7 @@ const logo = require("../assets/images/Split-logo.png");
 export default function IndexScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // toggle
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -73,6 +73,11 @@ export default function IndexScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* 🔐 Forgot Password Link */}
+      <TouchableOpacity onPress={() => router.push("/resetPassword")}>
+        <Text style={styles.forgotPassword}>Forgot Password?</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
@@ -115,7 +120,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 10,
     paddingHorizontal: 10,
-    marginBottom: 15,
+    marginBottom: 5,
   },
   passwordInput: {
     flex: 1,
@@ -123,6 +128,13 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     paddingHorizontal: 6,
+  },
+  forgotPassword: {
+    color: "#fff",
+    textAlign: "right",
+    marginBottom: 15,
+    marginRight: 4,
+    textDecorationLine: "underline",
   },
   button: {
     backgroundColor: "#3BE7CD",
