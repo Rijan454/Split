@@ -50,12 +50,13 @@ export default function SelectBy() {
         amount,
         currency,
         date,
-        by: member, // ✅ Correct param name
-        forMembers: forMembers ? forMembers.toString() : "", // ✅ Ensure string format
+        by: member,       // used for backend ID
+        byName: member,   // used for display
+        forMembers: forMembers ? forMembers.toString() : "",
       },
     });
   };
-
+  
   if (loading) {
     return (
       <View style={styles.container}>

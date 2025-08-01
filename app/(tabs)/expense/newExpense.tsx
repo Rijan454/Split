@@ -1,4 +1,3 @@
-// app/(tabs)/expense/newExpense.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -7,11 +6,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { ExpenseRepository } from "../../Repositories/ExpenseRepository";
-
 import { auth } from "../../../lib/firebase";
 
 export default function NewExpense() {
@@ -24,8 +24,8 @@ export default function NewExpense() {
   const [amount, setAmount] = useState(
     typeof params.amount === "string" ? params.amount : ""
   );
-  const [by, setBy] = useState(
-    typeof params.by === "string" ? params.by : ""
+  const [by, setByName] = useState(
+    typeof params.by === "string" ? params.byName : ""
   );
   const [forMembers, setForMembers] = useState(() => {
     if (typeof params.forMembers === "string") {
@@ -44,32 +44,6 @@ export default function NewExpense() {
     typeof params.date === "string" ? params.date : ""
   );
 
-  const validateAndSave = async () => {
-    if (!title || !amount || !by || forMembers.length === 0 || !currency) {
-      Alert.alert("Missing Information", "Please fill all fields.");
-      return;
-    }
-
-    try {
-      const uid = auth.currentUser?.uid;
-      if (!uid) throw new Error("User not logged in");
-
-      await ExpenseRepository.saveExpense({
-        title,
-        amount: parseFloat(amount), // make sure it's a number
-        by,
-        for: forMembers,
-        currency,
-        date,
-      });
-
-      router.push("/Summaryforexpense");
-    } catch (error) {
-      console.error("Error saving expense:", error);
-      Alert.alert("Error", "Could not save expense.");
-    }
-  };
-
   const handleCancel = () => {
     router.push("/expense");
   };
@@ -82,69 +56,113 @@ export default function NewExpense() {
     forMembers: JSON.stringify(forMembers),
   };
 
+  const resetForm = () => {
+    setTitle("");
+    setAmount("");
+    setBy("");
+    setForMembers([]);
+    setCurrency("AUD");
+    setDate("");
+  };
+
+  const validateAndSave = async () => {
+    if (!title || !amount) {
+      Alert.alert("Missing Info", "Please fill in both Title and Amount.");
+      return;
+    }
+
+    try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) throw new Error("User not logged in");
+
+      const today = new Date().toISOString().split("T")[0];
+
+      await ExpenseRepository.saveExpense({
+        title,
+        amount: parseFloat(amount),
+        by: by || "Anonymous",
+        byName: by || "Anonymous",
+        for: forMembers.length > 0 ? forMembers : ["All"],
+        currency,
+        date: date || today,
+      });
+
+      resetForm(); // ✅ clear the form after saving
+      Alert.alert("Success", "Expense saved successfully.");
+    } catch (error) {
+      console.error("Error saving expense:", error);
+      Alert.alert("Error", "Failed to save expense.");
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleCancel}>
-          <Text style={styles.cancel}>Cancel</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView keyboardShouldPersistTaps="handled">
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleCancel}>
+            <Text style={styles.cancel}>Cancel</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Add Expense</Text>
+          <TouchableOpacity onPress={validateAndSave}>
+            <Text style={styles.save}>Save</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Title"
+          value={title}
+          onChangeText={setTitle}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Amount"
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="numeric"
+        />
+
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() =>
+            router.push({ pathname: "/expense/selectBy", params: toQuery })
+          }
+        >
+          <Text style={styles.label}>By</Text>
+          <Text style={styles.value}>{by || "Select"}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Add Expense</Text>
-        <TouchableOpacity onPress={validateAndSave}>
-          <Text style={styles.save}>Save</Text>
+
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() =>
+            router.push({ pathname: "/expense/selectFor", params: toQuery })
+          }
+        >
+          <Text style={styles.label}>For</Text>
+          <Text style={styles.value}>
+            {forMembers.length > 0 ? forMembers.join(", ") : "Select"}
+          </Text>
         </TouchableOpacity>
-      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Title"
-        value={title}
-        onChangeText={setTitle}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Currency (e.g. AUD, USD)"
+          value={currency}
+          onChangeText={setCurrency}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Amount"
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="numeric"
-      />
-
-      <TouchableOpacity
-        style={styles.input}
-        onPress={() =>
-          router.push({ pathname: "/expense/selectBy", params: toQuery })
-        }
-      >
-        <Text style={styles.label}>By</Text>
-        <Text style={styles.value}>{by || "Select"}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.input}
-        onPress={() =>
-          router.push({ pathname: "/expense/selectFor", params: toQuery })
-        }
-      >
-        <Text style={styles.label}>For</Text>
-        <Text style={styles.value}>
-          {forMembers.length > 0 ? forMembers.join(", ") : "Select"}
-        </Text>
-      </TouchableOpacity>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Currency (e.g. AUD, USD)"
-        value={currency}
-        onChangeText={setCurrency}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Date (e.g. 2025-07-31)"
-        value={date}
-        onChangeText={setDate}
-      />
-    </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Date (YYYY-MM-DD)"
+          value={date}
+          onChangeText={setDate}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
