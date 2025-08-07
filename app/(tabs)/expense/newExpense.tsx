@@ -24,19 +24,38 @@ export default function NewExpense() {
   const [amount, setAmount] = useState(
     typeof params.amount === "string" ? params.amount : ""
   );
-  const [by, setByName] = useState(
-    typeof params.by === "string" ? params.byName : ""
-  );
+
+  // ✅ Safely extract 'by' and 'byName' with proper type check
+  const [byMember, setByMember] = useState(() => {
+    const rawBy = params.by;
+    const rawByName = params.byName;
+
+    const by = Array.isArray(rawBy) ? rawBy[0] : rawBy;
+    const byName = Array.isArray(rawByName) ? rawByName[0] : rawByName;
+
+    if (typeof by === "string") {
+      return {
+        uid: by,
+        name: typeof byName === "string" ? byName : "Anonymous",
+      };
+    }
+
+    return null;
+  });
+
+  // ✅ Safely parse forMembers param
   const [forMembers, setForMembers] = useState(() => {
     if (typeof params.forMembers === "string") {
       try {
-        return JSON.parse(params.forMembers);
+        const parsed = JSON.parse(params.forMembers);
+        return Array.isArray(parsed) ? parsed : [];
       } catch {
         return [];
       }
     }
     return [];
   });
+
   const [currency, setCurrency] = useState(
     typeof params.currency === "string" ? params.currency : "AUD"
   );
@@ -54,12 +73,14 @@ export default function NewExpense() {
     currency,
     date,
     forMembers: JSON.stringify(forMembers),
+    by: byMember?.uid,
+    byName: byMember?.name,
   };
 
   const resetForm = () => {
     setTitle("");
     setAmount("");
-    setBy("");
+    setByMember(null);
     setForMembers([]);
     setCurrency("AUD");
     setDate("");
@@ -77,17 +98,21 @@ export default function NewExpense() {
 
       const today = new Date().toISOString().split("T")[0];
 
+      const forUids = forMembers.map((m: any) => m.uid);
+      const forNames = forMembers.map((m: any) => m.name);
+
       await ExpenseRepository.saveExpense({
         title,
         amount: parseFloat(amount),
-        by: by || "Anonymous",
-        byName: by || "Anonymous",
-        for: forMembers.length > 0 ? forMembers : ["All"],
+        by: byMember?.uid || "Anonymous",
+        byName: byMember?.name || "Anonymous",
+        for: forUids.length > 0 ? forUids : [],
+        forMemberNames: forNames.length > 0 ? forNames : [],
         currency,
         date: date || today,
       });
 
-      resetForm(); // ✅ clear the form after saving
+      resetForm();
       Alert.alert("Success", "Expense saved successfully.");
     } catch (error) {
       console.error("Error saving expense:", error);
@@ -133,7 +158,7 @@ export default function NewExpense() {
           }
         >
           <Text style={styles.label}>By</Text>
-          <Text style={styles.value}>{by || "Select"}</Text>
+          <Text style={styles.value}>{byMember?.name || "Select"}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -144,7 +169,9 @@ export default function NewExpense() {
         >
           <Text style={styles.label}>For</Text>
           <Text style={styles.value}>
-            {forMembers.length > 0 ? forMembers.join(", ") : "Select"}
+            {forMembers.length > 0
+              ? forMembers.map((m: any) => m.name).join(", ")
+              : "Select"}
           </Text>
         </TouchableOpacity>
 

@@ -1,82 +1,63 @@
-// app/(tabs)/expense/selectBy.tsx
-
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { auth, db } from "@/lib/firebase";
+import { useAuth } from "@/hooks/useAuth";
+import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
+import { useEffect, useState } from "react";
 
 export default function SelectBy() {
   const router = useRouter();
-  const { title, amount, currency, date, forMembers } = useLocalSearchParams();
+  const { user } = useAuth();
+  const params = useLocalSearchParams();
 
-  const [members, setMembers] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [members, setMembers] = useState<{ uid: string; name: string }[]>([]);
 
   useEffect(() => {
     const fetchMembers = async () => {
-      try {
-        const uid = auth.currentUser?.uid;
-        if (!uid) return;
+      if (!user) return;
 
-        const snapshot = await getDocs(
-          collection(db, "users", uid, "groupMembers")
-        );
-
-        const names = snapshot.docs.map((doc) => doc.data().name);
-        setMembers(names);
-      } catch (err) {
-        console.error("Error fetching members:", err);
-      } finally {
-        setLoading(false);
-      }
+      const ref = collection(db, "users", user.uid, "groupMembers");
+      const snap = await getDocs(ref);
+      const data = snap.docs.map((doc) => ({
+        uid: doc.id,
+        name: doc.data().name,
+      }));
+      setMembers(data);
     };
 
     fetchMembers();
-  }, []);
+  }, [user]);
 
-  const handleSelect = (member: string) => {
+  const handleSelect = (member: { uid: string; name: string }) => {
     router.push({
       pathname: "/expense/newExpense",
       params: {
-        title,
-        amount,
-        currency,
-        date,
-        by: member,       // used for backend ID
-        byName: member,   // used for display
-        forMembers: forMembers ? forMembers.toString() : "",
+        ...params,
+        by: member.uid,
+        byName: member.name,
       },
     });
   };
-  
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#555" />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Select Member Who Paid</Text>
+      <Text style={styles.header}>Select Payer</Text>
       <FlatList
         data={members}
-        keyExtractor={(item) => item}
+        keyExtractor={(item) => item.uid}
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => handleSelect(item)}
             style={styles.item}
+            onPress={() => handleSelect(item)}
           >
-            <Text style={styles.itemText}>{item}</Text>
+            <Text style={styles.name}>{item.name}</Text>
           </TouchableOpacity>
         )}
       />
@@ -85,24 +66,15 @@ export default function SelectBy() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    padding: 16,
-  },
-  header: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
+  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  header: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
   item: {
     backgroundColor: "#f3e8e9",
     padding: 16,
-    marginBottom: 10,
-    borderRadius: 6,
+    borderRadius: 8,
+    marginBottom: 12,
   },
-  itemText: {
+  name: {
     fontSize: 16,
-    fontWeight: "600",
   },
 });

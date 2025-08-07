@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -12,7 +12,8 @@ import {
 } from "react-native";
 
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../lib/firebase";
+import { auth, db } from "../lib/firebase";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 const logo = require("../assets/images/Split-logo.png");
 
@@ -21,6 +22,7 @@ export default function IndexScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { inviteGroupId } = useLocalSearchParams();
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -29,8 +31,35 @@ export default function IndexScreen() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password.trim());
-      console.log("Logged in!");
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password.trim()
+      );
+
+      const user = userCredential.user;
+      const uid = user.uid;
+
+      console.log("✅ Logged in!");
+
+      // ✅ If there's an inviteGroupId, ensure this user is added to groupMembers
+      if (inviteGroupId) {
+        const memberRef = doc(db, `users/${uid}/groupMembers/${uid}`);
+        const snapshot = await getDoc(memberRef);
+
+        if (!snapshot.exists()) {
+          await setDoc(memberRef, {
+            uid,
+            name: user.displayName || "Anonymous",
+            groupId: inviteGroupId,
+          });
+          console.log("✅ User added to group via invite:", inviteGroupId);
+        } else {
+          console.log("ℹ️ User already in group");
+        }
+      }
+
+      // Navigate to your main app screen
       router.replace("/(tabs)");
     } catch (error: any) {
       console.log(error);
@@ -73,7 +102,6 @@ export default function IndexScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 🔐 Forgot Password Link */}
       <TouchableOpacity onPress={() => router.push("/resetPassword")}>
         <Text style={styles.forgotPassword}>Forgot Password?</Text>
       </TouchableOpacity>

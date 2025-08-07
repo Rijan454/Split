@@ -3,119 +3,107 @@ import {
   View,
   Text,
   FlatList,
-  Switch,
-  StyleSheet,
   TouchableOpacity,
+  StyleSheet,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { auth, db } from "@/lib/firebase";
+import { useAuth } from "@/hooks/useAuth";
+import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 
 export default function SelectFor() {
   const router = useRouter();
-  const uid = auth.currentUser?.uid;
-  const {
-    title = "",
-    amount = "",
-    currency = "AUD",
-    date = "",
-    byMember = "",
-    forMembers: initialFor = "[]",
-  } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const { user } = useAuth();
 
-  const [members, setMembers] = useState<string[]>([]);
-  const [selectedFor, setSelectedFor] = useState<string[]>(
-    JSON.parse(initialFor as string)
-  );
+  const [members, setMembers] = useState<{ uid: string; name: string }[]>([]);
+  const [selected, setSelected] = useState<
+    { uid: string; name: string }[]
+  >([]);
 
   useEffect(() => {
     const fetchMembers = async () => {
-      if (!uid) return;
-      try {
-        const snapshot = await getDocs(collection(db, "users", uid, "groupMembers"));
-        const names = snapshot.docs.map((doc) => doc.data().name);
-        setMembers(names);
-      } catch (error) {
-        console.error("Error loading group members:", error);
-      }
+      if (!user) return;
+
+      const ref = collection(db, "users", user.uid, "groupMembers");
+      const snap = await getDocs(ref);
+      const data = snap.docs.map((doc) => ({
+        uid: doc.id,
+        name: doc.data().name,
+      }));
+      setMembers(data);
     };
 
     fetchMembers();
-  }, [uid]);
+  }, [user]);
 
-  const toggleMember = (name: string) => {
-    setSelectedFor((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
-    );
+  const toggleSelect = (member: { uid: string; name: string }) => {
+    const isSelected = selected.some((m) => m.uid === member.uid);
+    if (isSelected) {
+      setSelected((prev) => prev.filter((m) => m.uid !== member.uid));
+    } else {
+      setSelected((prev) => [...prev, member]);
+    }
   };
 
   const handleDone = () => {
     router.push({
       pathname: "/expense/newExpense",
       params: {
-        title,
-        amount,
-        currency,
-        date,
-        byMember,
-        forMembers: JSON.stringify(selectedFor),
+        ...params,
+        forMembers: JSON.stringify(selected),
       },
     });
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Select For Members</Text>
+      <Text style={styles.header}>Select Recipients</Text>
       <FlatList
         data={members}
-        keyExtractor={(item) => item}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.name}>{item}</Text>
-            <Switch
-              value={selectedFor.includes(item)}
-              onValueChange={() => toggleMember(item)}
-            />
-          </View>
-        )}
+        keyExtractor={(item) => item.uid}
+        renderItem={({ item }) => {
+          const isSelected = selected.some((m) => m.uid === item.uid);
+          return (
+            <TouchableOpacity
+              style={[styles.item, isSelected && styles.selected]}
+              onPress={() => toggleSelect(item)}
+            >
+              <Text style={styles.name}>{item.name}</Text>
+            </TouchableOpacity>
+          );
+        }}
       />
-      <TouchableOpacity style={styles.button} onPress={handleDone}>
-        <Text style={styles.buttonText}>Done</Text>
+      <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+        <Text style={styles.doneText}>Done</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
+  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  header: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
+  item: {
+    backgroundColor: "#f3e8e9",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
   },
-  heading: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+  selected: {
+    backgroundColor: "#d1c4e9",
   },
   name: {
     fontSize: 16,
   },
-  button: {
-    marginTop: 20,
-    backgroundColor: "#f44336",
-    padding: 12,
+  doneButton: {
+    backgroundColor: "black",
+    padding: 16,
     borderRadius: 8,
     alignItems: "center",
+    marginTop: 16,
   },
-  buttonText: {
+  doneText: {
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
