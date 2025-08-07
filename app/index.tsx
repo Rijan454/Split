@@ -1,21 +1,23 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
-  Image,
-  StyleSheet,
+  View,
   Text,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
-  View,
+  Image,
+  Alert,
 } from "react-native";
-
+import { Video, ResizeMode } from "expo-av";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
+// Assets
 const logo = require("../assets/images/Split-logo.png");
+const backgroundVideo = require("../assets/images/BackgroundSplit.mp4");
 
 export default function IndexScreen() {
   const [email, setEmail] = useState("");
@@ -36,83 +38,107 @@ export default function IndexScreen() {
         email.trim(),
         password.trim()
       );
-
       const user = userCredential.user;
       const uid = user.uid;
 
-      console.log("✅ Logged in!");
-
-      // ✅ If there's an inviteGroupId, ensure this user is added to groupMembers
       if (inviteGroupId) {
         const memberRef = doc(db, `users/${uid}/groupMembers/${uid}`);
         const snapshot = await getDoc(memberRef);
-
         if (!snapshot.exists()) {
           await setDoc(memberRef, {
             uid,
             name: user.displayName || "Anonymous",
             groupId: inviteGroupId,
           });
-          console.log("✅ User added to group via invite:", inviteGroupId);
-        } else {
-          console.log("ℹ️ User already in group");
         }
       }
 
-      // Navigate to your main app screen
       router.replace("/(tabs)");
     } catch (error: any) {
-      console.log(error);
-      Alert.alert(
-        "Login Failed",
-        error?.message || "Invalid credentials. Please try again."
-      );
+      let message = "Login failed. Please try again.";
+
+      switch (error.code) {
+        case "auth/invalid-email":
+          message = "Invalid email format.";
+          break;
+        case "auth/user-not-found":
+          message = "No account found with this email. Please sign up.";
+          break;
+        case "auth/wrong-password":
+          message = "Incorrect password. Please try again.";
+          break;
+        case "auth/user-disabled":
+          message = "This user account has been disabled.";
+          break;
+        default:
+          message = error.message || message;
+      }
+
+      Alert.alert("Login Error", message);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Image source={logo} style={styles.logo} />
-      <Text style={styles.title}>Welcome Back</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
+      {/* Background Video */}
+      <Video
+        source={backgroundVideo}
+        style={StyleSheet.absoluteFill}
+        resizeMode={ResizeMode.COVER}
+        shouldPlay
+        isMuted
+        isLooping
       />
 
-      <View style={styles.passwordContainer}>
+      {/* Dark overlay */}
+      <View style={styles.overlay} />
+
+      {/* Login content */}
+      <View style={styles.content}>
+        <Image source={logo} style={styles.logo} />
+        <Text style={styles.title}>Welcome Back</Text>
+
         <TextInput
-          style={styles.passwordInput}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={!showPassword}
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#999"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-          <Ionicons
-            name={showPassword ? "eye-off" : "eye"}
-            size={24}
-            color="#888"
-            style={styles.eyeIcon}
+
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Password"
+            placeholderTextColor="#999"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
           />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={24}
+              color="#888"
+              style={styles.eyeIcon}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity onPress={() => router.push("/resetPassword")}>
+          <Text style={styles.forgotPassword}>Forgot Password?</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Sign In</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push("/signup")}>
+          <Text style={styles.linkText}>Don’t have an account? Sign up</Text>
         </TouchableOpacity>
       </View>
-
-      <TouchableOpacity onPress={() => router.push("/resetPassword")}>
-        <Text style={styles.forgotPassword}>Forgot Password?</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Sign In</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => router.push("/signup")}>
-        <Text style={styles.linkText}>Don’t have an account? Sign up</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -120,7 +146,15 @@ export default function IndexScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#2DBCC0",
+    position: "relative",
+    backgroundColor: "#000",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  content: {
+    flex: 1,
     justifyContent: "center",
     padding: 20,
   },
@@ -128,11 +162,11 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     alignSelf: "center",
-    marginBottom: 30,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 24,
     color: "#fff",
+    fontSize: 24,
     textAlign: "center",
     marginBottom: 20,
   },
