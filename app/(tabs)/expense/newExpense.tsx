@@ -74,7 +74,7 @@ export default function NewExpense() {
   const resetForm = () => {
     setTitle("");
     setAmount("");
-    setByMember(null);
+    setByMember;
     setForMembers([]);
     setCurrency("AUD");
     setDate("");

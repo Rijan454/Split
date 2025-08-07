@@ -31,8 +31,10 @@ import {
   MenuProvider,
   MenuTrigger,
 } from "react-native-popup-menu";
+import * as Print from "expo-print";
 
-// ✅ Format date from Firebase Timestamp or string
+import { shareAsync } from "expo-sharing";
+
 const formatDate = (date: any): string => {
   if (!date) return new Date().toISOString().split("T")[0];
   if (date instanceof Timestamp) return date.toDate().toISOString().split("T")[0];
@@ -44,7 +46,6 @@ export default function SummaryforExpense() {
   const router = useRouter();
   const [expenses, setExpenses] = useState<any[]>([]);
 
-  // ✅ Fetch expenses from Firestore
   const fetchExpenses = async () => {
     try {
       if (!user) return;
@@ -63,19 +64,17 @@ export default function SummaryforExpense() {
     }
   };
 
-  // ✅ Delete expense by ID
   const handleDelete = async (id: string) => {
     try {
       if (!user) return;
       await deleteDoc(doc(db, "users", user.uid, "expenses", id));
-      fetchExpenses(); // Refresh
+      fetchExpenses();
     } catch (err) {
       console.error("Error deleting expense", err);
       Alert.alert("Delete failed", "Could not delete expense.");
     }
   };
 
-  // ✅ Render swipeable delete button
   const renderRightActions = (id: string) => (
     <TouchableOpacity
       style={styles.deleteButton}
@@ -98,7 +97,29 @@ export default function SummaryforExpense() {
     fetchExpenses();
   }, [user]);
 
-  // ✅ Render each item
+  const downloadPDF = async () => {
+    const html = `
+      <html>
+        <body>
+          <h1>Expense Summary</h1>
+          ${expenses.map((exp) => `
+            <div>
+              <h3>${exp.title}</h3>
+              <p><strong>Paid By:</strong> ${exp.byName ?? exp.by ?? "Unknown"}</p>
+              <p><strong>Shared With:</strong> ${exp.forMemberNames?.join(", ") ?? "Not shared"}</p>
+              <p><strong>Amount:</strong> $${exp.amount}</p>
+              <p><strong>Date:</strong> ${formatDate(exp.date)}</p>
+              <hr />
+            </div>
+          `).join("")}
+        </body>
+      </html>
+    `;
+
+    const { uri } = await Print.printToFileAsync({ html });
+    await shareAsync(uri, { UTI: ".pdf", mimeType: "application/pdf" });
+  };
+
   const renderItem = ({ item }: { item: any }) => (
     <Swipeable renderRightActions={() => renderRightActions(item.id)}>
       <TouchableOpacity
@@ -125,10 +146,7 @@ export default function SummaryforExpense() {
             <Text style={styles.bold}>{item.title || "Untitled"}</Text>
             <Text>Paid By: {item.byName ?? item.by ?? "Unknown"}</Text>
             <Text>
-              Shared With:{" "}
-              {item.forMemberNames?.length
-                ? item.forMemberNames.join(", ")
-                : "Not shared"}
+              Shared With: {item.forMemberNames?.length ? item.forMemberNames.join(", ") : "Not shared"}
             </Text>
           </View>
           <View style={styles.right}>
@@ -154,10 +172,10 @@ export default function SummaryforExpense() {
               <Ionicons name="ellipsis-vertical" size={24} color="black" />
             </MenuTrigger>
             <MenuOptions>
-              <MenuOption onSelect={() => router.push("/sendInvitation")}>
+              <MenuOption onSelect={() => router.push("/sendInvitation")}> 
                 <Text style={styles.menuText}>Send Invitation</Text>
               </MenuOption>
-              <MenuOption onSelect={() => Alert.alert("Download Summary")}>
+              <MenuOption onSelect={downloadPDF}>
                 <Text style={styles.menuText}>Download Summary</Text>
               </MenuOption>
               <MenuOption onSelect={() => {}}>
@@ -177,7 +195,6 @@ export default function SummaryforExpense() {
   );
 }
 
-// ✅ Styles
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 40, backgroundColor: "#e5e5e5" },
   header: {
