@@ -24,10 +24,13 @@ export default function NewExpense() {
   const [amount, setAmount] = useState(
     typeof params.amount === "string" ? params.amount : ""
   );
-  const [by, setByName] = useState(
-    typeof params.by === "string" ? params.byName : ""
+  const [by, setBy] = useState(
+    typeof params.by === "string" ? params.by : ""
   );
-  const [forMembers, setForMembers] = useState(() => {
+  const [byName, setByName] = useState(
+    typeof params.byName === "string" ? params.byName : by
+  );
+  const [forMembers, setForMembers] = useState<string[]>(() => {
     if (typeof params.forMembers === "string") {
       try {
         return JSON.parse(params.forMembers);
@@ -60,6 +63,7 @@ export default function NewExpense() {
     setTitle("");
     setAmount("");
     setBy("");
+    setByName("");
     setForMembers([]);
     setCurrency("AUD");
     setDate("");
@@ -81,13 +85,13 @@ export default function NewExpense() {
         title,
         amount: parseFloat(amount),
         by: by || "Anonymous",
-        byName: by || "Anonymous",
+        byName: byName || by || "Anonymous",
         for: forMembers.length > 0 ? forMembers : ["All"],
         currency,
         date: date || today,
       });
 
-      resetForm(); // ✅ clear the form after saving
+      resetForm();
       Alert.alert("Success", "Expense saved successfully.");
     } catch (error) {
       console.error("Error saving expense:", error);
