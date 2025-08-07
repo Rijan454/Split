@@ -1,153 +1,84 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { auth, db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { useAuth } from '@/hooks/useAuth';
-import { db } from '@/lib/firebase';
+import { Expense, calculateBalances, MemberBalance } from './Repositories/calculateBalance';
 
-interface Member {
-  id: string;
-  name: string;
-  balance: number;
-}
-
-interface PaymentSuggestion {
-  from: string;
-  to: string;
-  amount: number;
-}
-
-export default function SuggestPaymentsScreen() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [suggestions, setSuggestions] = useState<PaymentSuggestion[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function SuggestPayments() {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchMembers = async () => {
-      if (!user?.uid) return;
-      setLoading(true);
+    const fetchSuggestions = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
 
-      const q = collection(db, 'users', user.uid, 'groupMembers');
-      const snapshot = await getDocs(q);
+      const expensesSnapshot = await getDocs(collection(db, 'users', uid, 'expenses'));
+      const expenses: Expense[] = expensesSnapshot.docs.map((doc) => doc.data() as Expense);
 
-      const fetchedMembers: Member[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name,
-        balance: doc.data().balance || 0,
-      }));
+      const balancesMap = calculateBalances(expenses);
+      const balances = Object.values(balancesMap);
 
-      setMembers(fetchedMembers);
-      setLoading(false);
-      computeSuggestions(fetchedMembers);
-    };
+      const creditors = balances.filter((m) => m.balance > 0).sort((a, b) => b.balance - a.balance);
+      const debtors = balances.filter((m) => m.balance < 0).sort((a, b) => a.balance - b.balance);
 
-    fetchMembers();
-  }, [user?.uid]);
+      const results: string[] = [];
 
-  const computeSuggestions = (members: Member[]) => {
-    const debtors = [...members].filter(m => m.balance < 0).sort((a, b) => a.balance - b.balance);
-    const creditors = [...members].filter(m => m.balance > 0).sort((a, b) => b.balance - a.balance);
+      let i = 0, j = 0;
+      while (i < debtors.length && j < creditors.length) {
+        const debtor = debtors[i];
+        const creditor = creditors[j];
 
-    const result: PaymentSuggestion[] = [];
+        const amount = Math.min(creditor.balance, -debtor.balance);
 
-    let i = 0, j = 0;
+        if (amount > 0) {
+          results.push(`${debtor.name} owes ${creditor.name} $${amount.toFixed(2)}`);
+          debtor.balance += amount;
+          creditor.balance -= amount;
+        }
 
-    while (i < debtors.length && j < creditors.length) {
-      const debtor = debtors[i];
-      const creditor = creditors[j];
-
-      const amount = Math.min(-debtor.balance, creditor.balance);
-
-      if (amount > 0) {
-        result.push({
-          from: debtor.name,
-          to: creditor.name,
-          amount: parseFloat(amount.toFixed(2)),
-        });
-
-        debtor.balance += amount;
-        creditor.balance -= amount;
+        if (Math.abs(debtor.balance) < 0.01) i++;
+        if (Math.abs(creditor.balance) < 0.01) j++;
       }
 
-      if (Math.abs(debtor.balance) < 0.01) i++;
-      if (creditor.balance < 0.01) j++;
-    }
+      setSuggestions(results);
+    };
 
-    setSuggestions(result);
-  };
+    fetchSuggestions();
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.doneButton}>
-        <Text style={styles.doneText}>Done</Text>
-      </TouchableOpacity>
-
-      {loading ? (
-        <ActivityIndicator size="large" color="#333" />
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Suggested Payments</Text>
+      {suggestions.length === 0 ? (
+        <Text style={styles.noSuggestion}>No payments required. Everyone is settled.</Text>
       ) : (
-        <ScrollView>
-          {suggestions.length === 0 ? (
-            <Text style={styles.emptyText}>No payments needed 🎉</Text>
-          ) : (
-            suggestions.map((s, index) => (
-              <View key={index} style={styles.row}>
-                <Text style={styles.text}>
-                  From {s.from}{"\n"}To {s.to}
-                </Text>
-                <Text style={styles.amount}>A${s.amount.toFixed(2)}</Text>
-              </View>
-            ))
-          )}
-        </ScrollView>
+        suggestions.map((item, index) => (
+          <Text key={index} style={styles.item}>
+            {item}
+          </Text>
+        ))
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    alignItems: 'center',
   },
-  doneButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 20,
-  },
-  doneText: {
-    color: 'red',
-    fontSize: 18,
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 16,
   },
-  row: {
-    backgroundColor: '#f0eaea',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  text: {
+  item: {
     fontSize: 16,
-    fontWeight: '600',
+    marginVertical: 6,
   },
-  amount: {
+  noSuggestion: {
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  emptyText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 50,
-    color: '#888',
+    fontStyle: 'italic',
+    marginTop: 20,
   },
 });
