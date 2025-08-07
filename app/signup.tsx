@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
 } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import React, { useState } from "react";
 import {
   Alert,
@@ -14,7 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth } from "../lib/firebase";
+import { auth, db } from "../lib/firebase";
 
 const logo = require("../assets/images/Split-logo.png");
 
@@ -26,6 +27,7 @@ export default function SignUpScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
+  const { inviteGroupId } = useLocalSearchParams();
 
   const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !password.trim() || !confirm.trim()) {
@@ -54,13 +56,22 @@ export default function SignUpScreen() {
         displayName: name.trim(),
       });
 
-      console.log("Account created successfully");
+      const uid = userCredential.user.uid;
 
-      //Show success message
+      // ✅ Automatically join group if invited
+      if (inviteGroupId) {
+        await setDoc(doc(db, `users/${uid}/groupMembers/${uid}`), {
+          uid,
+          name: name.trim(),
+          groupId: inviteGroupId,
+        });
+
+        console.log("User added to invited group:", inviteGroupId);
+      }
+
       Alert.alert("Success", "Account created successfully!");
+      router.replace("/"); // 👈 Navigate to home screen or dashboard
 
-      // Navigate to Sign In screen
-      router.replace("/");
     } catch (error: any) {
       console.log("Signup Error:", error);
       Alert.alert("Sign Up Failed", error.message || "Something went wrong.");

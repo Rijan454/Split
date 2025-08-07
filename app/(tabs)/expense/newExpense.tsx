@@ -24,22 +24,32 @@ export default function NewExpense() {
   const [amount, setAmount] = useState(
     typeof params.amount === "string" ? params.amount : ""
   );
-  const [by, setBy] = useState(
-    typeof params.by === "string" ? params.by : ""
-  );
-  const [byName, setByName] = useState(
-    typeof params.byName === "string" ? params.byName : by
-  );
-  const [forMembers, setForMembers] = useState<string[]>(() => {
+
+  const [byMember, setByMember] = useState(() => {
+    const rawBy = params.by;
+    const rawByName = params.byName;
+
+    const by = Array.isArray(rawBy) ? rawBy[0] : rawBy;
+    const byName = Array.isArray(rawByName) ? rawByName[0] : rawByName;
+
+    return {
+      uid: typeof by === "string" ? by : "",
+      name: typeof byName === "string" ? byName : "Anonymous",
+    };
+  });
+
+  const [forMembers, setForMembers] = useState(() => {
     if (typeof params.forMembers === "string") {
       try {
-        return JSON.parse(params.forMembers);
+        const parsed = JSON.parse(params.forMembers);
+        return Array.isArray(parsed) ? parsed : [];
       } catch {
         return [];
       }
     }
     return [];
   });
+
   const [currency, setCurrency] = useState(
     typeof params.currency === "string" ? params.currency : "AUD"
   );
@@ -57,13 +67,14 @@ export default function NewExpense() {
     currency,
     date,
     forMembers: JSON.stringify(forMembers),
+    by: byMember?.uid,
+    byName: byMember?.name,
   };
 
   const resetForm = () => {
     setTitle("");
     setAmount("");
-    setBy("");
-    setByName("");
+    setByMember(null);
     setForMembers([]);
     setCurrency("AUD");
     setDate("");
@@ -81,12 +92,16 @@ export default function NewExpense() {
 
       const today = new Date().toISOString().split("T")[0];
 
+      const forUids = forMembers.map((m: any) => m.uid);
+      const forNames = forMembers.map((m: any) => m.name);
+
       await ExpenseRepository.saveExpense({
         title,
         amount: parseFloat(amount),
-        by: by || "Anonymous",
-        byName: byName || by || "Anonymous",
-        for: forMembers.length > 0 ? forMembers : ["All"],
+        by: byMember?.uid || "Anonymous",
+        byName: byMember?.name || "Anonymous",
+        for: forUids.length > 0 ? forUids : [],
+        forMemberNames: forNames.length > 0 ? forNames : [],
         currency,
         date: date || today,
       });
@@ -137,7 +152,7 @@ export default function NewExpense() {
           }
         >
           <Text style={styles.label}>By</Text>
-          <Text style={styles.value}>{by || "Select"}</Text>
+          <Text style={styles.value}>{byMember?.name || "Select"}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -148,7 +163,9 @@ export default function NewExpense() {
         >
           <Text style={styles.label}>For</Text>
           <Text style={styles.value}>
-            {forMembers.length > 0 ? forMembers.join(", ") : "Select"}
+            {forMembers.length > 0
+              ? forMembers.map((m: any) => m.name).join(", ")
+              : "Select"}
           </Text>
         </TouchableOpacity>
 

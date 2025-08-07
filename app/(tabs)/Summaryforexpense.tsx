@@ -32,6 +32,7 @@ import {
   MenuTrigger,
 } from "react-native-popup-menu";
 
+// ✅ Format date from Firebase Timestamp or string
 const formatDate = (date: any): string => {
   if (!date) return new Date().toISOString().split("T")[0];
   if (date instanceof Timestamp) return date.toDate().toISOString().split("T")[0];
@@ -43,10 +44,10 @@ export default function SummaryforExpense() {
   const router = useRouter();
   const [expenses, setExpenses] = useState<any[]>([]);
 
+  // ✅ Fetch expenses from Firestore
   const fetchExpenses = async () => {
     try {
       if (!user) return;
-
       const expensesRef = collection(db, "users", user.uid, "expenses");
       const q = query(expensesRef, orderBy("date", "desc"));
       const snap = await getDocs(q);
@@ -62,19 +63,19 @@ export default function SummaryforExpense() {
     }
   };
 
+  // ✅ Delete expense by ID
   const handleDelete = async (id: string) => {
-  console.log("handleDelete called for ID:", id); // Confirm this logs
-  try {
-    if (!user) return;
-    await deleteDoc(doc(db, "users", user.uid, "expenses", id));
-    console.log("Deleted:", id); // Confirm deletion logs
-    fetchExpenses(); // Refresh list
-  } catch (err) {
-    console.error("Error deleting expense", err);
-    Alert.alert("Delete failed", "Could not delete expense.");
-  }
-};
+    try {
+      if (!user) return;
+      await deleteDoc(doc(db, "users", user.uid, "expenses", id));
+      fetchExpenses(); // Refresh
+    } catch (err) {
+      console.error("Error deleting expense", err);
+      Alert.alert("Delete failed", "Could not delete expense.");
+    }
+  };
 
+  // ✅ Render swipeable delete button
   const renderRightActions = (id: string) => (
     <TouchableOpacity
       style={styles.deleteButton}
@@ -97,23 +98,24 @@ export default function SummaryforExpense() {
     fetchExpenses();
   }, [user]);
 
+  // ✅ Render each item
   const renderItem = ({ item }: { item: any }) => (
     <Swipeable renderRightActions={() => renderRightActions(item.id)}>
       <TouchableOpacity
         onPress={() =>
-  router.push({
-    pathname: "/expense/expenseDetail",
-    params: {
-      title: item.title,
-      amount: item.amount,
-      date: formatDate(item.date),
-      byMember: item.byName ?? "Unknown",
-      forMembers: item.forMembers?.length
-        ? item.forMembers.join(", ")
-        : "Not shared",
-    },
-  })
-}
+          router.push({
+            pathname: "/expense/expenseDetail",
+            params: {
+              title: item.title,
+              amount: item.amount,
+              date: formatDate(item.date),
+              byMember: item.byName ?? item.by ?? "Unknown",
+              forMembers: item.forMemberNames?.length
+                ? item.forMemberNames.join(", ")
+                : "Not shared",
+            },
+          })
+        }
       >
         <View style={styles.card}>
           <View style={styles.left}>
@@ -121,7 +123,13 @@ export default function SummaryforExpense() {
           </View>
           <View style={styles.middle}>
             <Text style={styles.bold}>{item.title || "Untitled"}</Text>
-            <Text>Member: {item.byName || "Unknown"}</Text>
+            <Text>Paid By: {item.byName ?? item.by ?? "Unknown"}</Text>
+            <Text>
+              Shared With:{" "}
+              {item.forMemberNames?.length
+                ? item.forMemberNames.join(", ")
+                : "Not shared"}
+            </Text>
           </View>
           <View style={styles.right}>
             <Text style={styles.bold}>${item.amount}</Text>
@@ -140,12 +148,13 @@ export default function SummaryforExpense() {
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <Text style={styles.headerText}>Expenses Summary</Text>
+
           <Menu>
             <MenuTrigger>
               <Ionicons name="ellipsis-vertical" size={24} color="black" />
             </MenuTrigger>
             <MenuOptions>
-              <MenuOption onSelect={() => Alert.alert("Send Invitation")}>
+              <MenuOption onSelect={() => router.push("/sendInvitation")}>
                 <Text style={styles.menuText}>Send Invitation</Text>
               </MenuOption>
               <MenuOption onSelect={() => Alert.alert("Download Summary")}>
@@ -168,6 +177,7 @@ export default function SummaryforExpense() {
   );
 }
 
+// ✅ Styles
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 40, backgroundColor: "#e5e5e5" },
   header: {
