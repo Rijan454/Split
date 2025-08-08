@@ -13,6 +13,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ExpenseRepository } from "../../Repositories/ExpenseRepository";
 import { auth } from "../../../lib/firebase";
+import Constants from 'expo-constants';
 
 export default function NewExpense() {
   const router = useRouter();
@@ -192,6 +193,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     padding: 16,
+    paddingTop: Constants.statusBarHeight,
   },
   header: {
     flexDirection: "row",

@@ -8,6 +8,7 @@ import { db, auth } from '@/lib/firebase';
 import {
   collection, getDocs, updateDoc, doc
 } from 'firebase/firestore';
+import Constants from 'expo-constants';
 
 const avatarMap: Record<string, any> = {
   avatar1: require('@/assets/images/avatar1.png'),
@@ -210,7 +211,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: Constants.statusBarHeight, },
   heading: { fontSize: 22, fontWeight: 'bold', marginBottom: 16, alignSelf: 'center' },
   card: { backgroundColor: '#f4f4f4', borderRadius: 12, padding: 16, elevation: 4 },
   headerRow: { flexDirection: 'row', marginBottom: 10 },

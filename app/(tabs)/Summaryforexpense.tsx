@@ -34,6 +34,7 @@ import {
 import * as Print from "expo-print";
 
 import { shareAsync } from "expo-sharing";
+import Constants from 'expo-constants';
 
 const formatDate = (date: any): string => {
   if (!date) return new Date().toISOString().split("T")[0];
@@ -203,6 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: "space-between",
     marginBottom: 10,
+    paddingTop: Constants.statusBarHeight,
   },
   headerText: {
     fontSize: 20,
