@@ -9,6 +9,7 @@ import {
   collection, getDocs, updateDoc, doc
 } from 'firebase/firestore';
 import Constants from 'expo-constants';
+import { signOut } from 'firebase/auth';
 
 const avatarMap: Record<string, any> = {
   avatar1: require('@/assets/images/avatar1.png'),
@@ -25,9 +26,9 @@ interface Expense {
   amount: number;
   currency: string;
   date: string;
-  by: string; // uid of payer
+  by: string;
   byName: string;
-  for: string[]; // uid of recipients
+  for: string[];
   forMemberNames: string[];
 }
 
@@ -41,7 +42,7 @@ interface Member {
 export default function ProfileScreen() {
   const router = useRouter();
   const [members, setMembers] = useState<Member[]>([]);
-  const [settleModalVisible, setSettleModalVisible] = useState(false);
+  const [signOutModalVisible, setSignOutModalVisible] = useState(false);
   const [avatarModalVisible, setAvatarModalVisible] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
@@ -49,7 +50,6 @@ export default function ProfileScreen() {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
 
-    // Fetch expenses
     const expensesSnapshot = await getDocs(collection(db, 'users', uid, 'expenses'));
     const expenses: Expense[] = expensesSnapshot.docs.map(doc => ({
       ...(doc.data() as Expense),
@@ -58,7 +58,6 @@ export default function ProfileScreen() {
 
     const balanceMap: Record<string, number> = {};
 
-    // Calculate balances
     expenses.forEach(expense => {
       const { by, amount, for: recipients } = expense;
       const share = amount / recipients.length;
@@ -72,7 +71,6 @@ export default function ProfileScreen() {
       });
     });
 
-    // Fetch group members
     const groupSnapshot = await getDocs(collection(db, "users", uid, "groupMembers"));
     const members: Member[] = [];
 
@@ -109,29 +107,39 @@ export default function ProfileScreen() {
     fetchDataAndCalculateBalances();
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setSignOutModalVisible(false);
+      router.replace("/"); // <-- Go back to login
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   const renderMemberRow = (member: Member) => (
-  <View key={member.id} style={styles.memberRow}>
-    <View style={styles.avatarNameContainer}>
-      <TouchableOpacity
-        onPress={() => {
-          setSelectedMemberId(member.id);
-          setAvatarModalVisible(true);
-        }}
+    <View key={member.id} style={styles.memberRow}>
+      <View style={styles.avatarNameContainer}>
+        <TouchableOpacity
+          onPress={() => {
+            setSelectedMemberId(member.id);
+            setAvatarModalVisible(true);
+          }}
+        >
+          <Image source={avatarMap[member.avatar || 'avatar1']} style={styles.avatarImage} />
+        </TouchableOpacity>
+        <Text style={styles.memberName}>{member.name}</Text>
+      </View>
+      <Text
+        style={[
+          styles.balance,
+          { color: member.balance < 0 ? 'red' : member.balance > 0 ? 'green' : '#333' }
+        ]}
       >
-        <Image source={avatarMap[member.avatar || 'avatar1']} style={styles.avatarImage} />
-      </TouchableOpacity>
-      <Text style={styles.memberName}>{member.name}</Text>
+        ${Math.abs(member.balance).toFixed(2)}
+      </Text>
     </View>
-    <Text
-      style={[
-        styles.balance,
-        { color: member.balance < 0 ? 'red' : member.balance > 0 ? 'green' : '#333' }
-      ]}
-    >
-      ${Math.abs(member.balance).toFixed(2)}
-    </Text>
-  </View>
-);
+  );
 
   return (
     <View style={styles.container}>
@@ -148,41 +156,39 @@ export default function ProfileScreen() {
         </ScrollView>
 
         <View style={styles.totalRow}>
-  <Text style={styles.totalLabel}>Total Balance:</Text>
-  <Text style={{
-    fontWeight: 'bold',
-    fontSize: 16,
-    color:
-      totalBalance < -0.01
-        ? 'red'
-        : totalBalance > 0.01
-        ? 'green'
-        : '#333',
-  }}>
-    ${Math.abs(totalBalance).toFixed(2)}
-  </Text>
-</View>
+          <Text style={styles.totalLabel}>Total Balance:</Text>
+          <Text style={{
+            fontWeight: 'bold',
+            fontSize: 16,
+            color:
+              totalBalance < -0.01
+                ? 'red'
+                : totalBalance > 0.01
+                  ? 'green'
+                  : '#333',
+          }}>
+            ${Math.abs(totalBalance).toFixed(2)}
+          </Text>
+        </View>
       </View>
 
-      <TouchableOpacity style={styles.settleButton} onPress={() => setSettleModalVisible(true)}>
-        <Text style={styles.settleButtonText}>Settle Up</Text>
+      <TouchableOpacity style={styles.settleButton} onPress={() => setSignOutModalVisible(true)}>
+        <Text style={styles.settleButtonText}>Sign Out</Text>
       </TouchableOpacity>
 
-      {/* Settle Modal */}
-      <Modal visible={settleModalVisible} transparent animationType="fade">
+      {/* Sign Out Modal */}
+      <Modal visible={signOutModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.settleContainer}>
-            <TouchableOpacity onPress={() => setSettleModalVisible(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Are you sure you want to sign out?</Text>
             <TouchableOpacity
               style={styles.modalButton}
-              onPress={() => {
-                setSettleModalVisible(false);
-                router.push('/suggestPayments');
-              }}
+              onPress={handleSignOut}
             >
-              <Text style={styles.settleButtonText}>Suggest Payments</Text>
+              <Text style={styles.settleButtonText}>Yes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setSignOutModalVisible(false)}>
+              <Text style={styles.cancelText}>No</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -211,7 +217,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: Constants.statusBarHeight, },
+  container: { flex: 1, backgroundColor: '#fff', padding: 16, paddingTop: Constants.statusBarHeight },
   heading: { fontSize: 22, fontWeight: 'bold', marginBottom: 16, alignSelf: 'center' },
   card: { backgroundColor: '#f4f4f4', borderRadius: 12, padding: 16, elevation: 4 },
   headerRow: { flexDirection: 'row', marginBottom: 10 },
@@ -228,13 +234,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avatarImage: {
-    width: 40, height: 40, borderRadius: 20, marginRight: 10,
-  },
+  avatarImage: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
   memberName: { fontSize: 16 },
-  balance: {
-    flex: 1, fontSize: 16, fontWeight: '500', textAlign: 'right',
-  },
+  balance: { flex: 1, fontSize: 16, fontWeight: '500', textAlign: 'right' },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontWeight: 'bold', fontSize: 16 },
   settleButton: {
-    backgroundColor: '#2e86de',
+    backgroundColor: '#e74c3c',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
