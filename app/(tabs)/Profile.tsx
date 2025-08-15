@@ -111,7 +111,7 @@ export default function ProfileScreen() {
     try {
       await signOut(auth);
       setSignOutModalVisible(false);
-      router.replace("/"); // <-- Go back to login
+      router.replace("/signup"); // <-- Go back to login
     } catch (error) {
       console.error("Error signing out:", error);
     }
